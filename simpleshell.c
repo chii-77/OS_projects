@@ -4,8 +4,18 @@
 #include <sys/wait.h> //wait
 #include <string.h> //strtok
 #include <stdbool.h>
+#include <signal.h> //signal
 
+/*deal with background process terminated*/
+void func(int signum)
+{
+    int status;
+    pid_t wpid;
 
+    while((wpid = waitpid(-1, &status, WNOHANG)) > 0){
+        printf("Background process with PID %d terminated\n", wpid);
+    }
+}
 
 int main(){
 
@@ -45,12 +55,16 @@ int main(){
         pid = fork();
         if(pid == 0){ //子程序，執行外部命令
             /*execute the command*/
+            if(background){
+                signal(SIGINT, SIG_IGN); //忽略SIGINT信號
+            }
             execvp(args[0], args);
             perror("execvp"); //顯示錯誤資訊
             exit(1);    // 異常結束
         }else if(pid > 0){ //父程序
             if (background){
                 printf("Background process started with PID: %d\n", pid);
+                signal(SIGCHLD, func);
             }else{    
                 waitpid(pid, &wpid, 0); //等待子程序完成，子程序結果存入wpid
             }
