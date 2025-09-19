@@ -26,15 +26,19 @@ int main(){
         char *token  = strtok(input, delim);
         char *args[1024];
         int i = 0;
-       
+        int last_index = 0; //追蹤最後一個參數
+        bool background = false; //是否在背景執行
 
         while (token != NULL) {
             args[i++] = token; //第一次的token先存
             token = strtok(NULL, delim);
         }
         args[i] = NULL; //最後一個元素設為NULL，表示結束
-        
-
+        last_index = i - 1;
+        if (last_index >= 0 && strcmp(args[last_index], "&") == 0){ //strcmp比較字串是否相等
+            background = true;
+            args[last_index] = NULL; //已經處理完＆
+        }
 
         /*fork a child process*/
         pid_t pid, wpid;
@@ -45,7 +49,11 @@ int main(){
             perror("execvp"); //顯示錯誤資訊
             exit(1);    // 異常結束
         }else if(pid > 0){ //父程序
+            if (background){
+                printf("Background process started with PID: %d\n", pid);
+            }else{    
                 waitpid(pid, &wpid, 0); //等待子程序完成，子程序結果存入wpid
+            }
         }else{
             printf("fork failed");
             exit(1);
